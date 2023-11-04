@@ -55,7 +55,9 @@ class PostController extends Controller
             return back()->withInput()->withErrors($e->getMessage());
         }
 
-        return redirect()->route('posts.show', $post);
+        return redirect()
+            ->route('posts.show', $post)
+            ->with('notice', '記事を登録しました');
     }
 
     /**
@@ -80,7 +82,6 @@ class PostController extends Controller
      */
     public function update(StorePostRequest $request, string $id)
     {
-        //
     }
 
     /**
