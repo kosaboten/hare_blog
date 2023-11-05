@@ -20,6 +20,11 @@ class Post extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function comments()
+    {
+        return $this->hasMany(Comment::class);
+    }
+
     // 属性としてimage_urlを取得できるようになる
     public function getImageUrlAttribute()
     {
