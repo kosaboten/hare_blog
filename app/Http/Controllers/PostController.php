@@ -27,7 +27,7 @@ class PostController extends Controller
      */
     public function create()
     {
-        return view('posts.create'); 
+        return view('posts.create');
     }
 
     /**
@@ -37,7 +37,7 @@ class PostController extends Controller
     {
         $post = new Post($request->all());
         $post->user_id = $request->user()->id; //ログインしているユーザのIDを取り出す
-        
+
         $file = $request->file('image');
         $post->image = self::createFileName($file);
 
@@ -47,9 +47,9 @@ class PostController extends Controller
             // 登録
             $post->save();
             // 画像アップロード (保存場所,ファイル,ファイル名)
-            if(!Storage::putFileAs('images/posts', $file, $post->image)){
+            if (!Storage::putFileAs('images/posts', $file, $post->image)) {
                 // 例外を投げてロールバックさせる バックスラッシュによってグローバルな名前空間にエスケープする
-                throw new \Exception('画像ファイルの保存に失敗しました。');                
+                throw new \Exception('画像ファイルの保存に失敗しました。');
             }
 
             DB::commit();
@@ -85,7 +85,7 @@ class PostController extends Controller
     /**
      * Update the specified resource in storage.
      */
-public function update(UpdatePostRequest $request, string $id)
+    public function update(UpdatePostRequest $request, string $id)
     {
         $post = Post::find($id);
 
@@ -96,7 +96,7 @@ public function update(UpdatePostRequest $request, string $id)
 
         $file = $request->file('image');
         if ($file) {
-            $delete_file_path = 'images/posts/' . $post->image;
+            $delete_file_path = $post->image_path;
             $post->image = self::createFileName($file);
         }
         $post->fill($request->all());
@@ -113,7 +113,9 @@ public function update(UpdatePostRequest $request, string $id)
 
                 // 画像削除
                 if (!Storage::delete($delete_file_path)) {
-                    Storage::delete('images/posts/' . $post->image);
+                    // アップロードした動画を削除する
+                    Storage::delete($post->image_path);
+                    // 例外を投げてロールバックさせる
                     throw new \Exception('画像ファイルの削除に失敗しました');
                 }
             }
@@ -132,10 +134,33 @@ public function update(UpdatePostRequest $request, string $id)
      */
     public function destroy(string $id)
     {
-        //
+        $post = Post::find($id);
+
+        // トランザクション開始
+        DB::beginTransaction();
+        try {
+            // DBの投稿削除
+            $post->delete();
+
+            // storageの画像削除
+            if (!Storage::delete($post->image_path)) {
+                // 例外を投げてロールバック
+                throw new \Exception('画像ファイルの削除に失敗しました。');
+            }
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->withErrors($e->getMessage());
+        }
+
+        return redirect()->route('posts.index')
+            ->with('notice', '記事を削除しました');
     }
 
-    private static function createFileName($file){
+
+    private static function createFileName($file)
+    {
         return date('YmdHis') . '_' . $file->getClientOriginalName();
     }
 }

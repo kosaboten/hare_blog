@@ -20,8 +20,15 @@ class Post extends Model
         return $this->belongsTo(User::class);
     }
 
+    // 属性としてimage_urlを取得できるようになる
     public function getImageUrlAttribute()
     {
-        return Storage::url('images/posts/' . $this->image);
+        return Storage::url($this->image_path);
+    }
+
+    // 属性としてimage_pathを取得できるようになる
+    public function getImagePathAttribute()
+    {
+        return 'images/posts/' . $this->image;
     }
 }
