@@ -25,4 +25,11 @@ class StoreCommentRequest extends FormRequest
             'body' => 'required|string|max:200',
         ];
     }
+
+    public function attributes()
+    {
+        return [
+            'body' => 'コメント',
+        ];
+    }
 }
